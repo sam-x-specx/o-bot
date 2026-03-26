@@ -2,31 +2,32 @@ import discord
 from discord import app_commands
 import requests
 import os
-from dotenv import load_dotenv
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from dotenv import load_dotenv
 
 # Load env variables
 load_dotenv()
 
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+# ─── Keep-alive HTTP server for Render ───────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"OK")
+        self.wfile.write(b"Bot is alive!")
+
     def log_message(self, *args):
         pass  # silence access logs
 
 def run_server():
-    HTTPServer(("0.0.0.0", 10000), Handler).serve_forever()
+    port = int(os.environ.get("PORT", 10000))
+    HTTPServer(("0.0.0.0", port), Handler).serve_forever()
 
 threading.Thread(target=run_server, daemon=True).start()
-
-# # Load env variables
-# load_dotenv()
-
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+# ─────────────────────────────────────────────────────────────────────────────
 
 # Discord setup
 intents = discord.Intents.default()
@@ -54,7 +55,6 @@ def ask_groq(prompt):
     try:
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
-
         return response.json()["choices"][0]["message"]["content"]
 
     except Exception as e:
@@ -76,17 +76,9 @@ async def on_ready():
 # 🔥 SLASH COMMAND
 @tree.command(name="obot", description="Ask AI anything")
 async def obot(interaction: discord.Interaction, message: str):
-
-    # Show "thinking..."
     await interaction.response.defer()
-
-    # Get AI reply
     reply = ask_groq(message)
-
-    # Split long response
     parts = split_message(reply)
-
-    # Send each part
     for part in parts:
         await interaction.followup.send(part)
 
