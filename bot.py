@@ -3,9 +3,25 @@ from discord import app_commands
 import requests
 import os
 from dotenv import load_dotenv
+# extra port
+import threading
+from http.server import SimpleHTTPRequestHandler
+from socketserver import TCPServer
 
 # Load env variables
 load_dotenv()
+
+# 🔥 Render port fix
+def run_server():
+    import os
+    PORT = int(os.environ.get("PORT", 10000))
+    with TCPServer(("", PORT), SimpleHTTPRequestHandler) as httpd:
+        httpd.serve_forever()
+
+threading.Thread(target=run_server, daemon=True).start()
+
+# # Load env variables
+# load_dotenv()
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
