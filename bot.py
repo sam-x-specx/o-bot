@@ -3,20 +3,22 @@ from discord import app_commands
 import requests
 import os
 from dotenv import load_dotenv
-# extra port
 import threading
-from http.server import SimpleHTTPRequestHandler
-from socketserver import TCPServer
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Load env variables
 load_dotenv()
 
-# 🔥 Render port fix
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+    def log_message(self, *args):
+        pass  # silence access logs
+
 def run_server():
-    import os
-    PORT = int(os.environ.get("PORT", 10000))
-    with TCPServer(("", PORT), SimpleHTTPRequestHandler) as httpd:
-        httpd.serve_forever()
+    HTTPServer(("0.0.0.0", 10000), Handler).serve_forever()
 
 threading.Thread(target=run_server, daemon=True).start()
 
